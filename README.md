@@ -1,1 +1,2 @@
 # AnetPkg
+AnetOS package manager
