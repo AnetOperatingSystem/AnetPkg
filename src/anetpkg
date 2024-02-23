@@ -1,0 +1,77 @@
+#!/usr/bin/python3
+#
+# Copyright 2024 Alexander Vandakurov
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+import argparse
+import os
+import getpass
+
+def install(pathtopkg):
+    #prefixofpkg = '~/.cache/anetpkg/tmp/' #TODO: Set this directory as prefix
+    prefixofpkg = './'
+    pkgfilename = pathtopkg.split('/')[-1].split('.')[0]
+
+    os.system('mkdir ' + prefixofpkg + pkgfilename + ' && tar -xpC ' + prefixofpkg + pkgfilename + ' -f ' +  pathtopkg) #Unpacking
+
+    pkginfo = open(prefixofpkg + pkgfilename + '/pkginfo', 'r').read().split('\n') # Getting package info
+
+    print("Installing " + pkginfo[0]) # Installation
+    if getpass.getuser() == 'root':
+        inst_dir = '/usr/bin/'
+    else:
+        inst_dir = '~/.bin/'
+    os.system("""#!/bin/bash
+    cp """ + prefixofpkg + pkgfilename + '/exec ' + inst_dir + pkginfo[1])
+    if pkginfo[2] == 'true':
+        os.system("cp " + prefixofpkg + pkgfilename + '/desktop ' + '/usr/share/applications' + pkginfo[1] + '.desktop')
+    if pkginfo[3] == 'true':
+        os.system("mkdir /usr/share/" + pkginfo[1])
+        os.system("cp " + prefixofpkg + pkgfilename + '/data ' + '/usr/share/' + pkginfo[1])
+    try:
+        os.system(pkginfo[4])
+    except:
+        pass
+    os.system('rm -rf ' + prefixofpkg + pkgfilename) #Cleanup
+
+def remove(pkgname):
+    if os.path.exists('/usr/bin/' + pkgname):
+        os.system('rm /usr/bin/' + pkgname)
+    if os.path.exists('~/.bin/' + pkgname):
+        os.system('rm ~/.bin/' + pkgname)
+    if os.path.exists('/usr/share/' + pkgname):
+        os.system('rm -rf /usr/share/' + pkgname)
+    if os.path.exists('/usr/share/applications/' + pkgname + '.desktop'):
+        os.system('rm /usr/share/applications/' + pkgname + '.desktop')
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-f", "--file", help="Path to package file")
+parser.add_argument("-t", "--task", help="Choose, install or delete")
+args = parser.parse_args()
+
+if args.task == 'install':
+    if args.file == None:
+        pkgfile = input("Enter path to package file: ")
+        install(pkgfile)
+    else:
+        install(args.file)
+elif args.task == "remove":
+    if args.file == None:
+        pkgfile = input("Enter package name: ")
+        remove(pkgfile)
+    else:
+        remove(args.file)
